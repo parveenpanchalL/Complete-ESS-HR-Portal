@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { q } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
@@ -6,8 +7,11 @@ import { REQUEST_STATUS_COLOR } from "@/lib/status";
 import { cancelLeaveAction } from "@/lib/actions/employee";
 import { getLeaveBalances } from "@/lib/queries/employee";
 
+export const dynamic = "force-dynamic";
+
 export default async function LeavePage() {
-  const s = (await getSession())!;
+  const s = await getSession();
+  if (!s) redirect("/login");
   const types = await q<{ id: string; code: string; name: string }>(`SELECT id, code, name FROM leave_types ORDER BY code`);
   const balances = await getLeaveBalances(s.dbId);
   const reqs = await q<{ id: string; from_date: string; to_date: string; days: number; reason: string; status: string; attachment: string | null; code: string }>(

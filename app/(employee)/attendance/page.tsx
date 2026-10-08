@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { q } from "@/lib/db";
 import { currentMonth, todayStr } from "@/lib/utils/date";
@@ -9,10 +10,13 @@ import {
   ATTENDANCE_STATUS_LABEL, ATTENDANCE_STATUS_COLOR, ATTENDANCE_DOT_COLOR, REQUEST_STATUS_COLOR,
 } from "@/lib/status";
 
+export const dynamic = "force-dynamic";
+
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 export default async function AttendancePage({ searchParams }: { searchParams: { month?: string; day?: string } }) {
-  const s = (await getSession())!;
+  const s = await getSession();
+  if (!s) redirect("/login");
   const available = await getAvailableMonths(s.dbId, currentMonth());
   const month = searchParams.month && /^\d{4}-\d{2}$/.test(searchParams.month) ? searchParams.month : currentMonth();
   const { rows, counts, pct } = await getMonthAttendance(s.dbId, month);

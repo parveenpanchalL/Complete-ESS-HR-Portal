@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { q1 } from "@/lib/db";
 import { todayStr } from "@/lib/utils/date";
@@ -6,9 +7,11 @@ import { StatCard } from "@/components/ui/stat-card";
 import { PunchWidget } from "@/components/employee/punch-widget";
 import { getMonthAttendance, getLeaveBalances } from "@/lib/queries/employee";
 
+export const dynamic = "force-dynamic";
 
 export default async function EmployeeDashboard() {
-  const s = (await getSession())!;
+  const s = await getSession();
+  if (!s) redirect("/login");
   const TODAY = todayStr();
   const emp = (await q1<{ employee_id: string; name: string; department: string; designation: string }>(
     `SELECT employee_id, name, department, designation FROM employees WHERE id = ?`, [s.dbId]))!;

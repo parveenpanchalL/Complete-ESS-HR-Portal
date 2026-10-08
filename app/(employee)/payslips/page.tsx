@@ -1,10 +1,14 @@
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { q } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 export default async function PayslipsPage() {
-  const s = (await getSession())!;
+  const s = await getSession();
+  if (!s) redirect("/login");
   const rows = await q<{ id: string; month: number; year: number }>(
     `SELECT id, month, year FROM payslips WHERE employee_db_id = ? ORDER BY year DESC, month DESC`, [s.dbId]);
   return (

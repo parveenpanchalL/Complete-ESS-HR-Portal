@@ -1,9 +1,13 @@
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { q } from "@/lib/db";
 import { markNotificationsReadAction } from "@/lib/actions/employee";
 
+export const dynamic = "force-dynamic";
+
 export default async function NotificationsPage() {
-  const s = (await getSession())!;
+  const s = await getSession();
+  if (!s) redirect("/login");
   const rows = await q<{ id: string; title: string; message: string; read_status: boolean; created_at: string }>(
     `SELECT id, title, message, read_status, created_at FROM notifications WHERE employee_db_id = ? ORDER BY created_at DESC LIMIT 50`, [s.dbId]);
   const unread = rows.filter((r) => !r.read_status).length;

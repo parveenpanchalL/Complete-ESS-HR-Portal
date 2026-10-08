@@ -1,9 +1,13 @@
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { q1 } from "@/lib/db";
 import { ProfileForm } from "./profile-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProfilePage() {
-  const s = (await getSession())!;
+  const s = await getSession();
+  if (!s) redirect("/login");
   const e = (await q1<{
     employee_id: string;
     name: string;

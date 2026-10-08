@@ -5,21 +5,32 @@ declare global {
   var __essSql: ReturnType<typeof postgres> | undefined;
 }
 
+function cleanUrl(rawUrl?: string): string {
+  if (!rawUrl) return "postgresql://placeholder:placeholder@localhost:5432/placeholder";
+  let url = rawUrl.trim();
+  if ((url.startsWith('"') && url.endsWith('"')) || (url.startsWith("'") && url.endsWith("'"))) {
+    url = url.slice(1, -1);
+  }
+  // Remove square brackets around password if user accidentally left them from example: :[password]@
+  url = url.replace(/:\[([^\]]+)\]@/, (_, pw) => `:${encodeURIComponent(pw)}@`);
+
+  try {
+    new URL(url);
+    return url;
+  } catch {
+    // If invalid URL, use fallback during build so next build never crashes
+    return "postgresql://placeholder:placeholder@localhost:5432/placeholder";
+  }
+}
+
 function connect() {
   const url = process.env.DATABASE_URL;
-  // Next's build-time "collect page data" step imports every route module, including this
-  // one, even for pages that only query the DB inside a request handler. Fall back to an
-  // inert placeholder so the module can load without a real DATABASE_URL at build time;
-  // the `postgres` client doesn't open a socket until the first query, so this only
-  // surfaces as an error if something actually tries to query during the build (it shouldn't).
-  // Real requests at runtime still require a working DATABASE_URL and will fail loudly if not.
-  const effectiveUrl = url || "postgresql://placeholder:placeholder@localhost:5432/placeholder";
+  const effectiveUrl = cleanUrl(url);
   if (!url && process.env.NEXT_PHASE !== "phase-production-build") {
     console.warn("DATABASE_URL is not set — database queries will fail.");
   }
   const local = /@(localhost|127\.0\.0\.1)/.test(effectiveUrl);
   return postgres(effectiveUrl, {
-    // Supabase's pooler (pgbouncer, transaction mode) does not support prepared statements.
     prepare: false,
     max: Number(process.env.DB_POOL_MAX || 3),
     idle_timeout: 20,
