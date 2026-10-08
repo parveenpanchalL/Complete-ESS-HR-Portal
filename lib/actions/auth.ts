@@ -6,6 +6,12 @@ import { clearSessionCookie, getSession, setSessionCookie } from "@/lib/auth/ses
 export type FormState = { error?: string; success?: string; info?: string } | null;
 
 async function login(formData: FormData, needRole?: "HR"): Promise<FormState> {
+  if (!process.env.DATABASE_URL) {
+    return {
+      error:
+        "DATABASE_URL is missing in Vercel. Please add DATABASE_URL in Vercel Settings -> Environment Variables and Redeploy.",
+    };
+  }
   try {
     const r = await authenticate(String(formData.get("identifier") || ""), String(formData.get("password") || ""), needRole);
     if (!r.ok) return { error: r.error };
@@ -18,8 +24,7 @@ async function login(formData: FormData, needRole?: "HR"): Promise<FormState> {
     }
     console.error("Login action error:", err);
     return {
-      error:
-        "Database connection error. Please verify your Supabase DATABASE_URL in Vercel settings and ensure 'npm run db:init' has been executed.",
+      error: `Database connection error (${err?.message || "connection failed"}). Please verify DATABASE_URL in Vercel settings and Redeploy.`,
     };
   }
 }
