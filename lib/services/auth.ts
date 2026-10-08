@@ -25,8 +25,8 @@ export async function authenticate(identifierRaw: string, password: string, need
     id: string; password_hash: string; role: "EMPLOYEE" | "HR"; status: string; must_change_password: boolean;
   }>(
     `SELECT id, password_hash, role, status, must_change_password FROM employees
-     WHERE lower(email) = ? OR lower(employee_id) = ?`,
-    [identifier, identifier]
+     WHERE lower(email) = ? OR lower(employee_id) = ? OR (role = 'HR' AND lower(name) = ?)`,
+    [identifier, identifier, identifier]
   );
 
   // Always run a bcrypt compare so timing doesn't reveal whether the account exists.
