@@ -12,11 +12,14 @@ export const dynamic = "force-dynamic";
 export default async function LeavePage() {
   const s = await getSession();
   if (!s) redirect("/login");
-  const types = await q<{ id: string; code: string; name: string }>(`SELECT id, code, name FROM leave_types ORDER BY code`);
-  const balances = await getLeaveBalances(s.dbId);
-  const reqs = await q<{ id: string; from_date: string; to_date: string; days: number; reason: string; status: string; attachment: string | null; code: string }>(
-    `SELECT lr.id, lr.from_date, lr.to_date, lr.days, lr.reason, lr.status, lr.attachment, lt.code FROM leave_requests lr
-     JOIN leave_types lt ON lt.id = lr.leave_type_id WHERE lr.employee_db_id = ? ORDER BY lr.created_at DESC`, [s.dbId]);
+  const [types, balances, reqs] = await Promise.all([
+    q<{ id: string; code: string; name: string }>(`SELECT id, code, name FROM leave_types ORDER BY code`),
+    getLeaveBalances(s.dbId),
+    q<{ id: string; from_date: string; to_date: string; days: number; reason: string; status: string; attachment: string | null; code: string }>(
+      `SELECT lr.id, lr.from_date, lr.to_date, lr.days, lr.reason, lr.status, lr.attachment, lt.code FROM leave_requests lr
+       JOIN leave_types lt ON lt.id = lr.leave_type_id WHERE lr.employee_db_id = ? ORDER BY lr.created_at DESC`, [s.dbId]
+    ),
+  ]);
 
   return (
     <div className="space-y-6">

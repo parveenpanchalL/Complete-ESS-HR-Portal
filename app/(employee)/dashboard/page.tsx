@@ -13,13 +13,22 @@ export default async function EmployeeDashboard() {
   const s = await getSession();
   if (!s) redirect("/login");
   const TODAY = todayStr();
-  const emp = (await q1<{ employee_id: string; name: string; department: string; designation: string }>(
-    `SELECT employee_id, name, department, designation FROM employees WHERE id = ?`, [s.dbId]))!;
-  const { counts, pct, presentDays } = await getMonthAttendance(s.dbId, TODAY.slice(0, 7));
-  const balances = await getLeaveBalances(s.dbId);
+
+  const [empInfo, monthData, balances, todayPunch] = await Promise.all([
+    q1<{ employee_id: string; name: string; department: string; designation: string }>(
+      `SELECT employee_id, name, department, designation FROM employees WHERE id = ?`, [s.dbId]
+    ),
+    getMonthAttendance(s.dbId, TODAY.slice(0, 7)),
+    getLeaveBalances(s.dbId),
+    q1<{ in_time: string | null; out_time: string | null; working_hours: number | null; status: string }>(
+      `SELECT in_time, out_time, working_hours, status FROM attendance WHERE employee_db_id = ? AND date = ?`, [s.dbId, TODAY]
+    ),
+  ]);
+
+  const emp = empInfo || { name: s.name, employee_id: s.employeeId, department: "General", designation: "Employee" };
+  const { counts, pct, presentDays } = monthData;
   const total = balances.reduce((a, b) => a + b.remaining, 0);
-  const today = await q1<{ in_time: string | null; out_time: string | null; working_hours: number | null; status: string }>(
-    `SELECT in_time, out_time, working_hours, status FROM attendance WHERE employee_db_id = ? AND date = ?`, [s.dbId, TODAY]);
+  const today = todayPunch;
 
   return (
     <div className="space-y-6">

@@ -17,19 +17,24 @@ const MONTHS = ["January","February","March","April","May","June","July","August
 export default async function AttendancePage({ searchParams }: { searchParams: { month?: string; day?: string } }) {
   const s = await getSession();
   if (!s) redirect("/login");
-  const available = await getAvailableMonths(s.dbId, currentMonth());
   const month = searchParams.month && /^\d{4}-\d{2}$/.test(searchParams.month) ? searchParams.month : currentMonth();
-  const { rows, counts, pct } = await getMonthAttendance(s.dbId, month);
+
+  const [available, monthData, corrections, holidayRows] = await Promise.all([
+    getAvailableMonths(s.dbId, currentMonth()),
+    getMonthAttendance(s.dbId, month),
+    q<{ id: string; date: string; requested_in_time: string; requested_out_time: string; status: string; attachment: string | null }>(
+      `SELECT id, date, requested_in_time, requested_out_time, status, attachment FROM attendance_corrections WHERE employee_db_id = ? ORDER BY created_at DESC LIMIT 10`, [s.dbId]),
+    q<{ date: string; name: string }>(`SELECT date, name FROM holidays WHERE date >= ? AND date <= ?`, [`${month}-01`, `${month}-31`]),
+  ]);
+
+  const { rows, counts, pct } = monthData;
   const byDate = new Map(rows.map((r) => [r.date, r]));
+  const hols = new Map(holidayRows.map((h) => [h.date, h.name]));
 
   const [y, m] = month.split("-").map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
   const firstDow = new Date(y, m - 1, 1).getDay();
   const selected = searchParams.day ? byDate.get(searchParams.day) : undefined;
-
-  const corrections = await q<{ id: string; date: string; requested_in_time: string; requested_out_time: string; status: string; attachment: string | null }>(
-    `SELECT id, date, requested_in_time, requested_out_time, status, attachment FROM attendance_corrections WHERE employee_db_id = ? ORDER BY created_at DESC LIMIT 10`, [s.dbId]);
-  const hols = new Map((await q<{ date: string; name: string }>(`SELECT date, name FROM holidays WHERE date >= ? AND date <= ?`, [`${month}-01`, `${month}-31`])).map((h) => [h.date, h.name]));
   const today = todayStr();
   const selectedHoliday = searchParams.day ? hols.get(searchParams.day) : undefined;
 

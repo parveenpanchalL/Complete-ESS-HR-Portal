@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { q1 } from "@/lib/db";
 import { COOKIE_NAME, signToken, verifyToken } from "./token";
 
@@ -30,8 +31,8 @@ export function clearSessionCookie() {
   cookies().delete(COOKIE_NAME);
 }
 
-/** Verifies the cookie AND re-checks the user in the DB (so deactivation/role changes apply immediately). */
-export async function getSession(): Promise<SessionUser | null> {
+/** Verifies the cookie AND re-checks the user in the DB (deduplicated per request with React.cache). */
+export const getSession = cache(async (): Promise<SessionUser | null> => {
   const token = cookies().get(COOKIE_NAME)?.value;
   if (!token) return null;
   const t = await verifyToken(token);
@@ -45,7 +46,7 @@ export async function getSession(): Promise<SessionUser | null> {
     dbId: u.id, employeeId: u.employee_id, name: u.name, email: u.email,
     role: u.role, mustChangePassword: u.must_change_password,
   };
-}
+});
 
 export async function requireHr(): Promise<SessionUser> {
   const s = await getSession();
