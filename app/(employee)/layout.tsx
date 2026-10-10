@@ -42,7 +42,7 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
         </div>
         <nav className="max-w-5xl mx-auto px-4 flex gap-4 overflow-x-auto">
           {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className="py-2 text-sm text-gray-600 hover:text-gray-900 whitespace-nowrap">
+            <Link key={n.href} href={n.href} prefetch={false} className="py-2 text-sm text-gray-600 hover:text-gray-900 whitespace-nowrap">
               {n.label}
               {n.href === "/notifications" && unread > 0 && (
                 <span className="ml-1 text-[10px] bg-gray-900 text-white rounded px-1.5 py-0.5">{unread}</span>

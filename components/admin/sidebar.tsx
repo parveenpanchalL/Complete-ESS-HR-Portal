@@ -35,6 +35,7 @@ export function AdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={false}
               className={`block px-4 py-2 text-sm border-l-2 ${
                 active
                   ? "border-gray-900 bg-gray-50 text-gray-900 font-medium"

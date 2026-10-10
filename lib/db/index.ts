@@ -32,9 +32,10 @@ function connect() {
   const local = /@(localhost|127\.0\.0\.1)/.test(effectiveUrl);
   return postgres(effectiveUrl, {
     prepare: false,
-    max: Number(process.env.DB_POOL_MAX || 3),
-    idle_timeout: 20,
-    connect_timeout: 10,
+    max: Number(process.env.DB_POOL_MAX || 1),
+    idle_timeout: 10,
+    max_lifetime: 120,
+    connect_timeout: 8,
     ssl: local || /sslmode=/.test(effectiveUrl) ? undefined : "require",
   });
 }
